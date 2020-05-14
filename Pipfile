@@ -10,6 +10,7 @@ numpy = "==1.18"
 matplotlib = "*"
 pandas = "*"
 opencv-python = "*"
+torch = {file = "https://download.pytorch.org/whl/cu102/torch-1.5.0-cp38-cp38-win_amd64.whl"}
 
 [requires]
 python_version = "3.8"
