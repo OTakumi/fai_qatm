@@ -10,10 +10,10 @@ numpy = "==1.18"
 matplotlib = "*"
 opencv-python = "*"
 pathlib = "*"
-torch = {file = "https://download.pytorch.org/whl/cu102/torch-1.5.0-cp37-cp37m-win_amd64.whl"}
-torchvision = {file = "https://download.pytorch.org/whl/cu102/torchvision-0.6.0-cp37-cp37m-win_amd64.whl"}
 pandas = "*"
 seaborn = "*"
+torch = {file = "https://download.pytorch.org/whl/cu102/torch-1.5.0-cp37-cp37m-win_amd64.whl"}
+torchvision = {file = "https://download.pytorch.org/whl/cu102/torchvision-0.6.0-cp37-cp37m-win_amd64.whl"}
 
 [requires]
 python_version = "3.7"
