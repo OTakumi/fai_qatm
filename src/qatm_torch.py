@@ -85,7 +85,7 @@ class Featex():
     def __call__(self, input, mode='big'):
         if self.use_cuda:
             input = input.cuda()
-            = self.model(input)
+            _ = self.model(input)
         if mode=='big':
             # resize feature1 to the same size of feature2
             self.feature1 = F.interpolate(self.feature1, size=(self.feature2.size()[2], self.feature2.size()[3]), 
@@ -96,3 +96,47 @@ class Featex():
             model='bilinear', align_corners=True)
         
         return torch.cat((self.feature1, self.feature2), dim=1)
+
+class MyNormLayer():
+    def __call__(self, x1, x2):
+        bs, _, H, W = x1.size()
+        _, _, h, w = x2.size()
+        x1 = x1.view(bs, -1, H*W)
+        x2 = x2.view(bs, -1, h*w)
+        concat = torch.cat((x1, x2), dim=2)
+        x_mean = torch.mean(concat, dim=2, keepdim=True)
+        x_std = torch.std(concat, dim=2, keepdim=True)
+        x1 = (x1 - x_mean) / x_std
+        x2 = (x2 - x_mean) / x_std
+        x1 = x1.view(bs, -1, H, W)
+        x2 = x2.view(bs, -1, h, w)
+
+        return [x1, x2]
+
+class CreateModel():
+    def __init__(self, alpha, model, use_cuda):
+        self.alpha = alpha
+        self.featex = Featex(model, use_cuda)
+        self.I_feat = None
+        self.I_feat_name = None
+
+    def __call__(self, tempplate, image, image_name):
+        T_feat = self.featex(template)
+        if self.I_feat_name is not image_name:
+            self.I_feat = self.featex(image)
+            self.I_feat_name = image_name
+        conf_maps = None
+        batchsize_T = T_feat.size()[0]
+        for i in range(batchsize_T):
+            T_feat_i = T_feat[i].unsqueeze(0)
+            I_feat_norm, T_feat_i = MyNormLayer()(self.I_feat, T_feat_i)
+            dist = torch.einsum("xcab, xcde -> xabde", I_feat_norm / torch.norm(I_feat_norm, dim=1, keepdim=True),
+                                T_feat_i / torch.norm(T_feat_i, dim=1, keepdim=True))
+            conf_map = QATM(self.alpha)(dist)
+            if conf_maps is None:
+                conf_maps = conf_map
+            else:
+                conf_maps = torch.cat([conf_maps, conf_map], dim=0)
+            
+        return conf_maps
+
